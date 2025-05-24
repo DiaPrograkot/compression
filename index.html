@@ -558,42 +558,43 @@
         }
 
         .spaceship {
-            position: absolute;
-            left: 20px;
-            top: 20px;
-            width: 80px;
-            height: 40px;
-            background: var(--secondary);
-            border-radius: 20px 50px 50px 20px;
-            z-index: 10;
-            transform: rotate(45deg);
-            transform-origin: center center;
-            transition: left 0.05s linear, top 0.05s linear;
-            box-shadow: 0 0 15px rgba(106, 0, 255, 0.5);
-        }
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    width: 80px;
+    height: 40px;
+    background: var(--secondary);
+    border-radius: 20px 50px 50px 20px;
+    z-index: 10;
+    transform: rotate(45deg);
+    transform-origin: center center;
+    transition: left 0.05s linear, top 0.05s linear;
+    box-shadow: 0 0 15px rgba(106, 0, 255, 0.5);
+    display: none;
+}
 
-        .spaceship .window {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            width: 20px;
-            height: 20px;
-            background: var(--primary);
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
-        }
+.spaceship .window {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    width: 20px;
+    height: 20px;
+    background: var(--primary);
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+}
 
-        .spaceship .engine {
-            position: absolute;
-            left: -10px;
-            top: 15px;
-            width: 10px;
-            height: 10px;
-            background: var(--accent);
-            border-radius: 50%;
-            box-shadow: 0 0 15px var(--accent);
-            animation: engine-pulse 0.5s infinite alternate;
-        }
+.spaceship .engine {
+    position: absolute;
+    left: -10px;
+    top: 15px;
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 15px var(--accent);
+    animation: engine-pulse 0.5s infinite alternate;
+}
 
         .engine-fire {
             position: absolute;
@@ -1471,6 +1472,10 @@ input[type="range"]::-webkit-slider-thumb {
                     </div>
 
                     <div class="game-container">
+                        <div class="spaceship" id="spaceship">
+    <div class="window"></div>
+    <div class="engine"></div>
+</div>
                         <div class="spaceship-view">
                             <div class="stars"></div>
                             <div class="black-hole" id="black-hole"></div>
@@ -1922,48 +1927,74 @@ input[type="range"]::-webkit-slider-thumb {
         }
 
         // Игра
-        function updateMission() {
-            let totalSaved = 0;
-            const selects = document.querySelectorAll('.compression-select');
-
-            selects.forEach(select => {
-                totalSaved += parseInt(select.value);
-            });
-
-            const progress = Math.min(100, 10 + totalSaved * 0.9);
-
-            document.getElementById('mission-progress').style.width = `${progress}%`;
-            document.getElementById('mission-text').textContent = `Готовность передачи: ${Math.round(progress)}%`;
-
-            const message = document.getElementById('mission-message');
-            const launchBtn = document.getElementById('launch-btn');
-
-            if (totalSaved === 0) {
-                message.textContent = 'Выберите алгоритмы сжатия для файлов!';
-                message.style.background = 'rgba(255, 0, 0, 0.1)';
-                message.style.borderColor = 'var(--danger)';
-                launchBtn.disabled = true;
-            }
-            else if (progress >= 80) {
-                message.textContent = 'Отлично! Данные готовы к передаче! 🚀';
-                message.style.background = 'rgba(0, 255, 170, 0.1)';
-                message.style.borderColor = 'var(--success)';
-                launchBtn.disabled = false;
-            }
-            else if (progress >= 50) {
-                message.textContent = 'Хорошо, но можно сжать ещё лучше!';
-                message.style.background = 'rgba(255, 143, 0, 0.1)';
-                message.style.borderColor = 'var(--warning)';
-                launchBtn.disabled = true;
-            }
-            else {
-                message.textContent = 'Продолжайте оптимизировать файлы!';
-                message.style.background = 'rgba(255, 0, 0, 0.1)';
-                message.style.borderColor = 'var(--danger)';
-                launchBtn.disabled = true;
-            }
-        }
-
+function updateMission() {
+    // Получаем все элементы файлов и select
+    const fileItems = document.querySelectorAll('.file-item');
+    let totalOriginalSize = 0;
+    let totalCompressedSize = 0;
+    
+    fileItems.forEach(item => {
+        // Получаем размер файла из текста (например "12MB" -> 12)
+        const sizeText = item.querySelector('.file-size').textContent;
+        const size = parseFloat(sizeText) || 0;
+        totalOriginalSize += size;
+        
+        // Получаем выбранный процент сжатия
+        const select = item.querySelector('.compression-select');
+        const compressionPercent = parseInt(select.value) || 0;
+        
+        // Рассчитываем сжатый размер
+        totalCompressedSize += size * (100 - compressionPercent) / 100;
+    });
+    
+    // Рассчитываем прогресс (10-100%)
+    let progress = 10; // Минимальный прогресс
+    
+    if (totalOriginalSize > 0) {
+        const efficiency = 1 - (totalCompressedSize / totalOriginalSize);
+        progress = 50 + Math.min(90, Math.round(efficiency * 95));
+    }
+    
+    // Обновляем интерфейс
+    const progressElement = document.getElementById('mission-progress');
+    const textElement = document.getElementById('mission-text');
+    
+    if (progressElement && textElement) {
+        progressElement.style.width = `${progress}%`;
+        textElement.textContent = `Готовность передачи: ${progress}%`;
+    }
+    
+    // Определяем статус миссии
+    const message = document.getElementById('mission-message');
+    const launchBtn = document.getElementById('launch-btn');
+    
+    if (!message || !launchBtn) return;
+    
+    if (progress <= 10) {
+        message.textContent = 'Выберите алгоритмы сжатия для файлов!';
+        message.style.background = 'rgba(255, 0, 0, 0.1)';
+        message.style.borderColor = 'var(--danger)';
+        launchBtn.disabled = true;
+    } 
+    else if (progress >= 80) {
+        message.textContent = 'Отлично! Данные готовы к передаче! 🚀';
+        message.style.background = 'rgba(0, 255, 170, 0.1)';
+        message.style.borderColor = 'var(--success)';
+        launchBtn.disabled = false;
+    }
+    else if (progress >= 50) {
+        message.textContent = 'Хорошо, но можно сжать ещё лучше!';
+        message.style.background = 'rgba(255, 143, 0, 0.1)';
+        message.style.borderColor = 'var(--warning)';
+        launchBtn.disabled = true;
+    }
+    else {
+        message.textContent = 'Продолжайте оптимизировать файлы!';
+        message.style.background = 'rgba(255, 0, 0, 0.1)';
+        message.style.borderColor = 'var(--danger)';
+        launchBtn.disabled = true;
+    }
+}
         function launchSpaceship() {
             const spaceship = document.getElementById('spaceship');
             const station = document.getElementById('space-station');
